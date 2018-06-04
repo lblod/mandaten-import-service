@@ -1,0 +1,2 @@
+# run the import at 4:27 each day
+#* * * * *  /usr/local/bin/import.sh 
