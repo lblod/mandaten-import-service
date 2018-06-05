@@ -44,7 +44,9 @@ class Handler(con:RepositoryConnection, graph:IRI) extends RDFInserter(con) {
   }
   override def endRDF() ={
     if (cache.size > 0) {
-      con.add(cache, graph)
+      con.begin()
+      con.prepareUpdate(buildQueryFromCache).execute()
+      con.commit()
       cache.clear();
     }
   }
