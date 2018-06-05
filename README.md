@@ -19,3 +19,4 @@ The service can be configured through the following environment variables:
 * `IMPORT_DIR`: path to monitor, by default `/data/imports`
 * `SPARQL_ENDPOINT`: sparql endpoint to use
 * `CLEAR_ENDPOINT`: endpoint to call to clear cache
+* `CRON_PATTERN`: cron pattern (e.g `* * * * *`), when to run the import

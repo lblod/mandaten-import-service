@@ -36,7 +36,9 @@ class Handler(con:RepositoryConnection, graph:IRI) extends RDFInserter(con) {
   override def addStatement(subj: Resource, pred: IRI, obj: Value, ctxt: Resource) = {
     cache.add(subj,pred,obj);
     if (cache.size == BATCH_SIZE) {
+      con.begin()
       con.prepareUpdate(buildQueryFromCache).execute()
+      con.commit()
       cache.clear();
     }
   }
