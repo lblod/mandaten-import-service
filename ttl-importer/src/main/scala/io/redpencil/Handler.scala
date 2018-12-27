@@ -8,27 +8,22 @@ import org.eclipse.rdf4j.model.IRI
 import org.eclipse.rdf4j.model.vocabulary.RDF
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema
 import scala.collection.JavaConversions._
+import org.eclipse.rdf4j.rio.ntriples.NTriplesWriter
+import java.io.ByteArrayOutputStream
+
 
 
 class Handler(con:RepositoryConnection, graph:IRI) extends RDFInserter(con) {
   val BATCH_SIZE=1000
   val cache = new LinkedHashModel();
-  def valueToSPARQL(value:Value) = {
-    value match {
-      case v:Resource => s"<${v.stringValue}>"
-      case v:Literal => {
-        v.getDatatype match {
-          case RDF.LANGSTRING => s""""${v.stringValue}"@${v.getLanguage.get}"""
-          case XMLSchema.STRING => s""""${v.stringValue}""""
-          case _ => s""""${v.stringValue}"^^<${v.getDatatype}>"""
-        }
-      }
-    }
-  }
+
   def buildQueryFromCache = {
-    val statements = cache.map( (row:Statement) => {
-                                 s"${valueToSPARQL(row.getSubject)} ${valueToSPARQL(row.getPredicate)} ${valueToSPARQL(row.getObject)}"
-                               }).mkString(".\n" )
+    val baos = new ByteArrayOutputStream()
+    val ntriplesWriter = new NTriplesWriter(baos)
+    ntriplesWriter.startRDF
+    cache.foreach( s => ntriplesWriter.handleStatement(s))
+    ntriplesWriter.endRDF
+    val statements = baos.toString("UTF8")
     s"""INSERT DATA INTO <${graph.stringValue}> {
       $statements
     }"""

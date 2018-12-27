@@ -2,12 +2,13 @@ package io.redpencil
 
 import org.eclipse.rdf4j.query.QueryLanguage
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository
-import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFFormat
 import scala.collection.JavaConverters._
-import org.eclipse.rdf4j.RDF4JException;
+import org.eclipse.rdf4j.RDF4JException
 import org.eclipse.rdf4j.rio.Rio
-import java.io.FileInputStream;
-import java.util.UUID;
+import java.io.FileInputStream
+import java.io.InputStreamReader
+import java.util.UUID
 
 object Importer {
   // argument parsing via https://stackoverflow.com/questions/2315912/best-way-to-parse-command-line-parameters#3183991
@@ -36,8 +37,8 @@ object Importer {
     val options = nextOption(Map(),arglist)
     val repo = new SPARQLRepository(options.getOrElse('endpoint, ""))
     repo.initialize()
-    val file = new FileInputStream(options.getOrElse('file,""));
-    val baseURI = "http://example.org/example/local";
+    val file = new InputStreamReader(new FileInputStream(options.getOrElse('file,"")),"utf-8")
+    val baseURI = "http://example.org/example/local"
     try {
       val con = repo.getConnection();
       val tempGraph = s"http://data.lblod.info/temp/$uuid"
@@ -51,7 +52,7 @@ object Importer {
       con.prepareUpdate(QueryLanguage.SPARQL, query).execute();
     }
     catch {
-      case e => { println(e); e.printStackTrace; System.exit(1) }
+      case e:Throwable => { e.printStackTrace; System.exit(1) }
     }
   }
 }
