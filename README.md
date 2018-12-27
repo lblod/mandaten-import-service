@@ -8,7 +8,7 @@ To add the service to your stack, add the following to `docker-compose.yml`:
 ```
 services:
   import:
-    image: lblod/mandaten-import-service:0.1.0
+    image: lblod/mandaten-import-service:0.2.0
     volumes:
       - /path/to/imports:/data/imports
 ```
@@ -20,3 +20,4 @@ The service can be configured through the following environment variables:
 * `SPARQL_ENDPOINT`: sparql endpoint to use
 * `CLEAR_ENDPOINT`: endpoint to call to clear cache
 * `CRON_PATTERN`: cron pattern (e.g `* * * * *`), when to run the import
+* `KEEP_DATA`: if set keep data in destination graph, if not overwrite the graph (the default)

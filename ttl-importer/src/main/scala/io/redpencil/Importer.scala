@@ -32,6 +32,8 @@ object Importer {
           nextOption(map ++ Map('file -> value), tail)
         case "--graph" :: value :: tail =>
           nextOption(map ++ Map('graph -> value), tail)
+        case "--keep-data" :: tail =>
+          nextOption(map ++ Map('keepData -> "keepData" ), tail)
       }
     }
     val options = nextOption(Map(),arglist)
@@ -48,7 +50,13 @@ object Importer {
       val handler = new Handler(con, con.getValueFactory.createIRI(tempGraph))
       parser.setRDFHandler(handler)
       parser.parse(file, tempGraph)
-      val query = s"MOVE GRAPH <$tempGraph> TO <$graph>"
+      val query =
+        if (options.contains('keepData)) {
+        s"ADD GRAPH <$tempGraph> TO <$graph>"
+      }
+      else {
+        s"MOVE GRAPH <$tempGraph> TO <$graph>"
+      }
       con.prepareUpdate(QueryLanguage.SPARQL, query).execute();
     }
     catch {

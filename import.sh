@@ -4,11 +4,15 @@ exec >> /proc/1/fd/1 2>> /proc/1/fd/1 # redirect output to STDOUT from cron
 ## configuration
 DEFAULT_GRAPH=${DEFAULT_GRAPH:-"http://mu.semte.ch/application"}
 IMPORT_DIR=${IMPORT_DIR:-"/data/imports"}
-
+KEEP_DATA=${KEEP_DATA:-false}
 ## functions
 function importfile() {
     FILENAME=$1
-    java -jar /usr/local/bin/import.jar --endpoint "$SPARQL_ENDPOINT" --file "$FILENAME" --graph "$DEFAULT_GRAPH"
+    if [[ $KEEP_DATA ]]; then
+        java -jar /usr/local/bin/import.jar --endpoint "$SPARQL_ENDPOINT" --file "$FILENAME" --graph "$DEFAULT_GRAPH" --keep-data
+    else
+        java -jar /usr/local/bin/import.jar --endpoint "$SPARQL_ENDPOINT" --file "$FILENAME" --graph "$DEFAULT_GRAPH"
+    fi
     if [ $? -eq 0 ];then
         curl -s -X POST $CLEAR_ENDPOINT
     fi
