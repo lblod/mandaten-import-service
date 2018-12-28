@@ -9,16 +9,33 @@ import org.eclipse.rdf4j.rio.Rio
 import java.io.FileInputStream
 import java.io.InputStreamReader
 import java.util.UUID
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file._
+import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
 
 object Importer {
   // argument parsing via https://stackoverflow.com/questions/2315912/best-way-to-parse-command-line-parameters#3183991
    val usage = """
-    Usage: importer [--endpoint http://localhost:8890/sparql] [--file filename.ttl] [--graph http://your-graph/]
+    Usage: importer [--endpoint http://localhost:8890/sparql] [--file filename.ttl] [--graph http://your-graph/] [--keep-data] [--post-process-queries /full/path/to/queries/]
   """
   def uuid = UUID.randomUUID
 
+  def listSparqlFiles(path: String) = {
+    val files = ArrayBuffer.empty[Path]
+    val root = Paths.get(path)
+    Files.walkFileTree(root, new SimpleFileVisitor[Path] {
+                         override def visitFile(file: Path, attrs: BasicFileAttributes) = {
+                           if (file.getFileName.toString.endsWith(".rq")) {
+                             files += file
+                         }
+                         FileVisitResult.CONTINUE
+                       }
+                     })
+    files
+  }
+
   def main(args: Array[String]) {
-    if (args.length == 0) println(usage)
     val arglist = args.toList
     type OptionMap = Map[Symbol, String]
 
@@ -34,18 +51,19 @@ object Importer {
           nextOption(map ++ Map('graph -> value), tail)
         case "--keep-data" :: tail =>
           nextOption(map ++ Map('keepData -> "keepData" ), tail)
+        case "--post-process-queries" :: value :: tail =>
+          nextOption(map ++ Map('queryFolder -> value), tail)
       }
     }
-    val options = nextOption(Map(),arglist)
-    val repo = new SPARQLRepository(options.getOrElse('endpoint, ""))
-    repo.initialize()
-    val file = new InputStreamReader(new FileInputStream(options.getOrElse('file,"")),"utf-8")
-    val baseURI = "http://example.org/example/local"
     try {
+      val options = nextOption(Map(),arglist)
+      val repo = new SPARQLRepository(options.getOrElse('endpoint, ""))
+      repo.initialize()
+      val file = new InputStreamReader(new FileInputStream(options.getOrElse('file,"")),"utf-8")
+      val baseURI = "http://example.org/example/local"
       val con = repo.getConnection();
       val tempGraph = s"http://data.lblod.info/temp/$uuid"
       val graph = options.getOrElse('graph,"")
-
       val parser = Rio.createParser(RDFFormat.TURTLE)
       val handler = new Handler(con, con.getValueFactory.createIRI(tempGraph))
       parser.setRDFHandler(handler)
@@ -57,9 +75,19 @@ object Importer {
       else {
         s"MOVE GRAPH <$tempGraph> TO <$graph>"
       }
-      con.prepareUpdate(QueryLanguage.SPARQL, query).execute();
+      con.prepareUpdate(QueryLanguage.SPARQL, query).execute()
+      if (options.contains('queryFolder)) {
+        val path = options.get('queryFolder)
+        val queries = listSparqlFiles(options.getOrElse('queryFolder,""))
+        queries.foreach( (path:Path) => {
+                          val query = Source.fromFile(path.toString).mkString
+                          println(s"running query from $path")
+                          con.prepareUpdate(QueryLanguage.SPARQL, query).execute()
+                        })
+      }
     }
     catch {
+      case e:scala.MatchError => {println(usage); System.exit(-1) }
       case e:Throwable => { e.printStackTrace; System.exit(1) }
     }
   }

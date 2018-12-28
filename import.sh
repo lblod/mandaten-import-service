@@ -9,9 +9,9 @@ KEEP_DATA=${KEEP_DATA:-false}
 function importfile() {
     FILENAME=$1
     if [[ $KEEP_DATA ]]; then
-        java -jar /usr/local/bin/import.jar --endpoint "$SPARQL_ENDPOINT" --file "$FILENAME" --graph "$DEFAULT_GRAPH" --keep-data
+        java -jar /usr/local/bin/import.jar --endpoint "$SPARQL_ENDPOINT" --file "$FILENAME" --graph "$DEFAULT_GRAPH" --keep-data --post-process-queries /data/queries
     else
-        java -jar /usr/local/bin/import.jar --endpoint "$SPARQL_ENDPOINT" --file "$FILENAME" --graph "$DEFAULT_GRAPH"
+        java -jar /usr/local/bin/import.jar --endpoint "$SPARQL_ENDPOINT" --file "$FILENAME" --graph "$DEFAULT_GRAPH" --post-process-queries /data/queries
     fi
     if [ $? -eq 0 ];then
         curl -s -X POST $CLEAR_ENDPOINT
