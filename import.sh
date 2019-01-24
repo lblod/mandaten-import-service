@@ -4,7 +4,7 @@ exec >> /proc/1/fd/1 2>> /proc/1/fd/1 # redirect output to STDOUT from cron
 ## configuration
 DEFAULT_GRAPH=${DEFAULT_GRAPH:-"http://mu.semte.ch/application"}
 IMPORT_DIR=${IMPORT_DIR:-"/data/imports"}
-KEEP_DATA=${KEEP_DATA:-false}
+KEEP_DATA=${KEEP_DATA:-""}
 ## functions
 function importfile() {
     FILENAME=$1
