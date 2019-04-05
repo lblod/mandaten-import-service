@@ -70,7 +70,7 @@ object Importer {
       parser.parse(file, tempGraph)
       val query =
         if (options.contains('keepData)) {
-        s"ADD GRAPH <$tempGraph> TO <$graph>"
+        s"ADD GRAPH <$tempGraph> TO <$graph>; DROP SILENT GRAPH <$tempGraph>"
       }
       else {
         s"MOVE GRAPH <$tempGraph> TO <$graph>"
