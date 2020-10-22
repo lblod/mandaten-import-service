@@ -149,7 +149,7 @@ object Importer {
       repo.initialize()
       println("Getting connection")
       val con = repo.getConnection()
-      val cleanupQuery = "DROP SILENT GRAPH <$tempGraph>"
+      val cleanupQuery = s"DROP SILENT GRAPH <$tempGraph>"
       con.prepareUpdate(QueryLanguage.SPARQL, cleanupQuery).execute()
       println(s"Query $cleanupQuery seemed fine")
     }
