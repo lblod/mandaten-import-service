@@ -165,11 +165,11 @@ object Importer {
 
       try {
         println("Starting import")
-        importFile(endpoint, filePath, graph, tempGraph)
-        moveData(endpoint, graph, tempGraph, keepData)
+        executeWithRetry(() => importFile(endpoint, filePath, graph, tempGraph), 0, 20, 120)
+        executeWithRetry(() => moveData(endpoint, graph, tempGraph, keepData), 0, 20, 120)
 
         if(options.contains('queryFolder)){
-          postProcessData(endpoint, queryFolder)
+          executeWithRetry(() => postProcessData(endpoint, queryFolder), 0, 20, 120)
         }
         print("Import seems ok...")
       }
@@ -177,7 +177,7 @@ object Importer {
         case e:Throwable => {
           println("Import failed...")
           e.printStackTrace;
-          cleanUpTempGraph(endpoint, tempGraph)
+          executeWithRetry(() => cleanUpTempGraph(endpoint, tempGraph), 0, 20, 120)
           throw new Exception("Import failed")
         }
       }
