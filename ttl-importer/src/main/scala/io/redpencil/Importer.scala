@@ -55,7 +55,6 @@ object Importer {
           nextOption(map ++ Map('queryFolder -> value), tail)
       }
     }
-    try {
 
     def importWithRetry(callback: () => Unit, currentAttemptNumber: Int, maxAttempts: Int, sleep: Int) : Unit = {
       try {
@@ -80,6 +79,8 @@ object Importer {
         };
      }
     }
+
+    def importData() : Unit = {
       val options = nextOption(Map(),arglist)
       val repo = new SPARQLRepository(options.getOrElse('endpoint, ""))
       repo.initialize()
@@ -103,12 +104,19 @@ object Importer {
       if (options.contains('queryFolder)) {
         val path = options.get('queryFolder)
         val queries = listSparqlFiles(options.getOrElse('queryFolder,""))
-        queries.foreach( (path:Path) => {
-                          val query = Source.fromFile(path.toString).mkString
-                          println(s"running query from $path")
-                          con.prepareUpdate(QueryLanguage.SPARQL, query).execute()
-                        })
+
+        queries.foreach( (path: Path ) => {
+           val query = Source.fromFile(path.toString).mkString
+           println(s"running query from $path")
+           con.prepareUpdate(QueryLanguage.SPARQL, query).execute()
+        } )
       }
+    }
+
+    try {
+      println("Starting import")
+      importWithRetry(importData, 0, 15, 60)
+      print("Import seems ok...")
     }
     catch {
       case e:scala.MatchError => {println(usage); System.exit(-1) }
@@ -116,4 +124,3 @@ object Importer {
     }
   }
 }
-
