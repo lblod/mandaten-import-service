@@ -71,7 +71,7 @@ object Importer {
             throw new Exception("Max attempts of import reached")
           }
           else {
-            val nextSleepTime = sleep * scala.util.Random.nextFloat
+            val nextSleepTime = (sleep * scala.util.Random.nextFloat).toLong
             println(s"Attempt $currentAttemptNumber failed, sleeping $nextSleepTime seconds")
             Thread.sleep(nextSleepTime * 1000)
             importWithRetry(callback, currentAttemptNumber + 1, maxAttempts, sleep);
