@@ -79,43 +79,108 @@ object Importer {
      }
     }
 
-    def importData() : Unit = {
-      val options = nextOption(Map(),arglist)
-      val repo = new SPARQLRepository(options.getOrElse('endpoint, ""))
+    def importFile(endpoint: String, filePath: String, graph: String, tempGraph: String): Unit = {
+      println("Initializing repo")
+      val repo = new SPARQLRepository(endpoint)
       repo.initialize()
-      val file = new InputStreamReader(new FileInputStream(options.getOrElse('file,"")),"utf-8")
-      val baseURI = "http://example.org/example/local"
-      val con = repo.getConnection();
-      val tempGraph = s"http://data.lblod.info/temp/$uuid"
-      val graph = options.getOrElse('graph,"")
+
+      val file = new InputStreamReader(new FileInputStream(filePath),"utf-8")
+
+      println("Getting connection")
+      val con = repo.getConnection()
+
+      val tempGraphUri = con.getValueFactory.createIRI(tempGraph)
+
+      println(s"Loading data into $tempGraphUri")
+
       val parser = Rio.createParser(RDFFormat.TURTLE)
-      val handler = new Handler(con, con.getValueFactory.createIRI(tempGraph))
+      val handler = new Handler(con, tempGraphUri)
       parser.setRDFHandler(handler)
       parser.parse(file, tempGraph)
+
+      println(s"Loading data into $tempGraphUri OK")
+    }
+
+    def moveData(endpoint: String, graph: String, tempGraph: String, keepData: Boolean): Unit = {
       val query =
-        if (options.contains('keepData)) {
+        if (keepData) {
         s"ADD GRAPH <$tempGraph> TO <$graph>; DROP SILENT GRAPH <$tempGraph>"
       }
       else {
         s"MOVE GRAPH <$tempGraph> TO <$graph>"
       }
-      con.prepareUpdate(QueryLanguage.SPARQL, query).execute()
-      if (options.contains('queryFolder)) {
-        val path = options.get('queryFolder)
-        val queries = listSparqlFiles(options.getOrElse('queryFolder,""))
 
-        queries.foreach( (path: Path ) => {
-           val query = Source.fromFile(path.toString).mkString
-           println(s"running query from $path")
-           con.prepareUpdate(QueryLanguage.SPARQL, query).execute()
-        } )
+      println("Initializing repo")
+      val repo = new SPARQLRepository(endpoint)
+      repo.initialize()
+      println("Getting connection")
+      val con = repo.getConnection()
+
+      println(s"MOVE OR ADD FROM $tempGraph to $graph")
+      con.prepareUpdate(QueryLanguage.SPARQL, query).execute()
+      println(s"MOVE OR ADD FROM $tempGraph to $graph OK")
+    }
+
+    def postProcessData(endpoint: String, queryFolder: String): Unit = {
+      println("Initializing repo")
+      val repo = new SPARQLRepository(endpoint)
+      repo.initialize()
+      println("Getting connection")
+      val con = repo.getConnection()
+
+       val path = queryFolder
+      val queries = listSparqlFiles(queryFolder)
+
+      queries.foreach( (path: Path ) => {
+         val query = Source.fromFile(path.toString).mkString
+         println(s"Running query from $path")
+         println(s"Query: $query")
+         con.prepareUpdate(QueryLanguage.SPARQL, query).execute()
+      } )
+    }
+
+    def cleanUpTempGraph(endpoint: String, tempGraph: String){
+      println("Initializing repo")
+      val repo = new SPARQLRepository(endpoint)
+      repo.initialize()
+      println("Getting connection")
+      val con = repo.getConnection()
+      val cleanupQuery = "DROP SILENT GRAPH <$tempGraph>"
+      con.prepareUpdate(QueryLanguage.SPARQL, cleanupQuery).execute()
+      println(s"Query $cleanupQuery seemed fine")
+    }
+
+    def importData() : Unit = {
+      val options = nextOption(Map(),arglist)
+      val endpoint = options.getOrElse('endpoint, "")
+      val filePath = options.getOrElse('file,"")
+      val graph = options.getOrElse('graph,"")
+      val tempGraph = s"http://data.lblod.info/temp/$uuid"
+      val keepData = options.contains('keepData)
+      val queryFolder = options.getOrElse('queryFolder,"")
+
+      try {
+        println("Starting import")
+        importFile(endpoint, filePath, graph, tempGraph)
+        moveData(endpoint, graph, tempGraph, keepData)
+
+        if(options.contains('queryFolder)){
+          postProcessData(endpoint, queryFolder)
+        }
+        print("Import seems ok...")
+      }
+      catch {
+        case e:Throwable => {
+          println("Import failed...")
+          e.printStackTrace;
+          cleanUpTempGraph(endpoint, tempGraph)
+          throw new Exception("Import failed")
+        }
       }
     }
 
     try {
-      println("Starting import")
-      importWithRetry(importData, 0, 20, 120)
-      print("Import seems ok...")
+      importData()
     }
     catch {
       case e:scala.MatchError => {println(usage); System.exit(-1) }
