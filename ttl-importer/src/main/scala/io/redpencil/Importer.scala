@@ -56,6 +56,30 @@ object Importer {
       }
     }
     try {
+
+    def importWithRetry(callback: () => Unit, currentAttemptNumber: Int, maxAttempts: Int, sleep: Int) : Unit = {
+      try {
+        println("Executing import call")
+        callback()
+        println("Import call seems to be successful")
+      }
+      catch {
+        case e:Exception => {
+          println(s"Error importing file")
+          e.printStackTrace()
+          if(currentAttemptNumber >= maxAttempts) {
+            println("Exceeded max attemps executing import, giving up...")
+            throw new Exception("Max attempts of import reached")
+          }
+          else {
+            val nextSleepTime = sleep * scala.util.Random.nextFloat
+            println(s"Attempt $currentAttemptNumber failed, sleeping $nextSleepTime seconds")
+            Thread.sleep(nextSleepTime * 1000)
+            importWithRetry(callback, currentAttemptNumber + 1, maxAttempts, sleep);
+          }
+        };
+     }
+    }
       val options = nextOption(Map(),arglist)
       val repo = new SPARQLRepository(options.getOrElse('endpoint, ""))
       repo.initialize()
