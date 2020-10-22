@@ -40,6 +40,3 @@ if [ ! -z $file ]; then
         echo "$ENDDATE: FAILED importing file"
     fi
 fi
-
-
-
