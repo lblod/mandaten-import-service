@@ -115,7 +115,7 @@ object Importer {
 
     try {
       println("Starting import")
-      importWithRetry(importData, 0, 15, 60)
+      importWithRetry(importData, 0, 20, 120)
       print("Import seems ok...")
     }
     catch {
