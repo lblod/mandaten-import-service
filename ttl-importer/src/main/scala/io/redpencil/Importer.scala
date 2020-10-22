@@ -56,25 +56,24 @@ object Importer {
       }
     }
 
-    def importWithRetry(callback: () => Unit, currentAttemptNumber: Int, maxAttempts: Int, sleep: Int) : Unit = {
+    def executeWithRetry[T](callback: () => T, currentAttemptNumber: Int, maxAttempts: Int, sleep: Int): T = {
       try {
-        println("Executing import call")
+        println("Executing call")
         callback()
-        println("Import call seems to be successful")
       }
       catch {
         case e:Exception => {
-          println(s"Error importing file")
+          println(s"Error executing call")
           e.printStackTrace()
           if(currentAttemptNumber >= maxAttempts) {
-            println("Exceeded max attemps executing import, giving up...")
-            throw new Exception("Max attempts of import reached")
+            println("Max attempts of import reached, giving up...")
+            throw new Exception("Max attempts reached")
           }
           else {
             val nextSleepTime = (sleep * scala.util.Random.nextFloat).toLong
-            println(s"Attempt $currentAttemptNumber failed, sleeping $nextSleepTime seconds")
+            println(s"Attempt $currentAttemptNumber/$maxAttempts failed, sleeping $nextSleepTime seconds")
             Thread.sleep(nextSleepTime * 1000)
-            importWithRetry(callback, currentAttemptNumber + 1, maxAttempts, sleep);
+            executeWithRetry(callback, currentAttemptNumber + 1, maxAttempts, sleep);
           }
         };
      }
