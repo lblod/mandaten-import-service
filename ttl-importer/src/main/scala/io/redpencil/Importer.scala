@@ -80,6 +80,7 @@ object Importer {
     }
 
     def importFile(endpoint: String, filePath: String, graph: String, tempGraph: String): Unit = {
+      println("Start file import")
       println("Initializing repo")
       val repo = new SPARQLRepository(endpoint)
       repo.initialize()
@@ -102,6 +103,7 @@ object Importer {
     }
 
     def moveData(endpoint: String, graph: String, tempGraph: String, keepData: Boolean): Unit = {
+      println("Start move data")
       val query =
         if (keepData) {
         s"ADD GRAPH <$tempGraph> TO <$graph>; DROP SILENT GRAPH <$tempGraph>"
@@ -122,6 +124,7 @@ object Importer {
     }
 
     def postProcessData(endpoint: String, queryFolder: String): Unit = {
+      println("Start postprocess")
       println("Initializing repo")
       val repo = new SPARQLRepository(endpoint)
       repo.initialize()
@@ -140,6 +143,7 @@ object Importer {
     }
 
     def cleanUpTempGraph(endpoint: String, tempGraph: String){
+      println("Start cleanup")
       println("Initializing repo")
       val repo = new SPARQLRepository(endpoint)
       repo.initialize()
