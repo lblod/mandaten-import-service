@@ -2,6 +2,7 @@ package io.redpencil
 
 import org.eclipse.rdf4j.query.QueryLanguage
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository
+import org.eclipse.rdf4j.repository.RepositoryConnection
 import org.eclipse.rdf4j.rio.RDFFormat
 import scala.collection.JavaConverters._
 import org.eclipse.rdf4j.RDF4JException
@@ -127,18 +128,17 @@ object Importer {
       println("Start postprocess")
       println("Initializing repo")
       val repo = new SPARQLRepository(endpoint)
-      repo.initialize()
+      executeWithRetry(repo.initialize, 0, 20, 120)
       println("Getting connection")
-      val con = repo.getConnection()
-
-       val path = queryFolder
+      val con = executeWithRetry(repo.getConnection, 0, 20, 120).asInstanceOf[RepositoryConnection]
+      val path = queryFolder
       val queries = listSparqlFiles(queryFolder)
 
       queries.foreach( (path: Path ) => {
          val query = Source.fromFile(path.toString).mkString
          println(s"Running query from $path")
          println(s"Query: $query")
-         con.prepareUpdate(QueryLanguage.SPARQL, query).execute()
+         executeWithRetry(con.prepareUpdate(QueryLanguage.SPARQL, query).execute, 0, 20, 120)
       } )
     }
 
@@ -165,11 +165,12 @@ object Importer {
 
       try {
         println("Starting import")
+        //TODO: consider moving retries into body of functions.
         executeWithRetry(() => importFile(endpoint, filePath, graph, tempGraph), 0, 20, 120)
         executeWithRetry(() => moveData(endpoint, graph, tempGraph, keepData), 0, 20, 120)
 
         if(options.contains('queryFolder)){
-          executeWithRetry(() => postProcessData(endpoint, queryFolder), 0, 20, 120)
+          postProcessData(endpoint, queryFolder)
         }
         print("Import seems ok...")
       }
